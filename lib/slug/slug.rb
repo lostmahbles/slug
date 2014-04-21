@@ -9,6 +9,7 @@ module Slug
     # Options:
     # * <tt>:column</tt> - the column the slug will be saved to (defaults to <tt>:slug</tt>)
     # * <tt>:validate_uniquness_if</tt> - proc to determine whether uniqueness validation runs, same format as validates_uniquness_of :if
+    # * <tt>:scope</tt> - scope of slug uniqueness
     #
     # Slug will take care of validating presence and uniqueness of slug.
     
@@ -16,12 +17,14 @@ module Slug
     # Note that subsequent changes to the source column will have no effect on the slug.
     # If you'd like to update the slug later on, call <tt>@model.set_slug</tt>
     def slug source, opts={}
-      class_attribute :slug_source, :slug_column
+      class_attribute :slug_source, :slug_column, :slug_scope
       include InstanceMethods
       
       self.slug_source = source
       
       self.slug_column = opts.has_key?(:column) ? opts[:column] : :slug
+
+      self.slug_scope = opts.has_key?(:slug_scope) ? opts[:slug_scope] : []
 
       uniqueness_opts = {}
       uniqueness_opts[:if] = opts[:validate_uniqueness_if] if opts.key?(:validate_uniqueness_if)
@@ -113,7 +116,13 @@ module Slug
   
     # Returns the next unique index for a slug.
     def next_slug_sequence
-      last_in_sequence = self.class.where("#{self.slug_column} LIKE ?", self[self.slug_column] + '%').order("REPLACE(#{self.slug_column},'#{self[self.slug_column]}-','') DESC").first
+      search_string = sanitize_sql_for_conditions("#{self.slug_column} LIKE ?", self[self.slug_column] + '%')
+      unless slug_scope.empty?
+        slug_scope.each do |s|
+          search_string += sanitize_sql_for_conditions(" AND #{s} = ?", self[s])
+        end
+      end
+      last_in_sequence = self.class.where(search_string).order("REPLACE(#{self.slug_column},'#{self[self.slug_column]}-','') DESC").first
       if last_in_sequence.nil?
         return 0
       else

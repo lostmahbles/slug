@@ -116,10 +116,10 @@ module Slug
   
     # Returns the next unique index for a slug.
     def next_slug_sequence
-      search_string = sanitize_sql_for_conditions("#{self.slug_column} LIKE ?", self[self.slug_column] + '%')
+      search_string = self.class.sanitize_sql_for_conditions("#{self.slug_column} LIKE ?", self[self.slug_column] + '%')
       unless slug_scope.empty?
         slug_scope.each do |s|
-          search_string += sanitize_sql_for_conditions(" AND #{s} = ?", self[s])
+          search_string += self.class.sanitize_sql_for_conditions(" AND #{s} = ?", self[s])
         end
       end
       last_in_sequence = self.class.where(search_string).order("REPLACE(#{self.slug_column},'#{self[self.slug_column]}-','') DESC").first

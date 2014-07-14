@@ -28,6 +28,7 @@ module Slug
 
       uniqueness_opts = {}
       uniqueness_opts[:if] = opts[:validate_uniqueness_if] if opts.key?(:validate_uniqueness_if)
+      uniqueness_opts[:scope] = opts[:slug_scope] if opts.key?(:slug_scope)
       
       validates                 self.slug_column, :presence => { :message => "cannot be blank. Is #{self.slug_source} sluggable?" }
       validates                 self.slug_column, :uniqueness => uniqueness_opts

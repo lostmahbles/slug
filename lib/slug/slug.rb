@@ -117,7 +117,7 @@ module Slug
   
     # Returns the next unique index for a slug.
     def next_slug_sequence
-      search_string = self.class.send(:sanitize_sql_for_conditions, ["#{self.slug_column} LIKE ?", self[self.slug_column] + '%'])
+      search_string = self.class.send(:sanitize_sql_for_conditions, ["(#{self.slug_column} LIKE ? OR #{self.slug_column} SIMILAR TO ?)", self[self.slug_column], self[self.slug_column] + '-[0-9]+$'])
       unless slug_scope.empty?
         slug_scope.each do |s|
           search_string += self.class.send(:sanitize_sql_for_conditions, [" AND #{s} = ?", self[s]])
